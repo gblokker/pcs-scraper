@@ -1,7 +1,6 @@
 package com.github.gblokker.scraper;
 
 import com.github.gblokker.classes.Race;
-import com.github.gblokker.scraper.FindElement;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
