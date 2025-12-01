@@ -1,13 +1,15 @@
 package com.github.gblokker.classes;
 
-import java.util.List;
+import java.util.Map;
 
 public class Cyclist {
     public final String name;
-    public List<String> races;
+    public final int year;
+    public Map<String, Race> races;
 
-    public Cyclist(String name, List<String> races) {
+    public Cyclist(String name, int year, Map<String, Race> races) {
         this.name = name;
+        this.year = year;
         this.races = races;
     }
 }

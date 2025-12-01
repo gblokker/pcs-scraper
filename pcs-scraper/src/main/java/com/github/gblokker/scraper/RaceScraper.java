@@ -14,12 +14,21 @@ import java.util.Map;
 
 public class RaceScraper extends FindElement {
 
-    public Race scrapeRaceData(String raceName, int year) throws IOException {
+    public Race scrapeRaceData(String raceName, int year, boolean includeParticipants) throws IOException {
         Map<String, String> raceData = parseBaseRaceInfo(raceName, year);
-        Map<String, String> raceResults = parseRaceResult(raceName, year);
-        Map<String, String> raceParticipants = parseRaceParticipants(raceName, year);
         Map<String, String> raceProfile = parseStrageProfile(raceName, year);
-        
+
+        Map<String, String> raceResults;
+        Map<String, String> raceParticipants;
+
+        if (includeParticipants) {
+            raceResults = parseRaceResult(raceName, year);
+            raceParticipants = parseRaceParticipants(raceName, year);
+        } else {
+            raceResults = new LinkedHashMap<>();
+            raceParticipants = new LinkedHashMap<>();
+        }
+            
         Race allData = new Race(
             raceName,
             year,
