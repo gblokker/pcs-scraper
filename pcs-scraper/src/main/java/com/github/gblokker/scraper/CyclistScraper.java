@@ -22,6 +22,8 @@ public class CyclistScraper extends FindElement {
                 .timeout(15000)
                 .get();
 
+        // System.out.println(cyclistResults.toString());
+
         Map<String, Race> cyclistRaces = new java.util.HashMap<>();
         RaceScraper raceScraper = new RaceScraper();
 
@@ -29,14 +31,25 @@ public class CyclistScraper extends FindElement {
 
         for (Element row : rows) {
             Elements cells = row.select("td");
-            if (cells.size() > 6) {
-                String raceName = cells.get(4).text();
-                Race race = raceScraper.scrapeRaceData(raceName, year, true);
+            Element link = row.selectFirst("td a[href]");
+            String href = null;
+            if (link != null) {
+                href = link.attr("href");
+            }
+            if (cells.size() > 6 && href != null) {
+                String raceName = href.split("/")[1];
+                String raceYear = href.split("/")[2];
+                raceName = sanitizeRaceName(raceName);
+                Race race = raceScraper.scrapeRaceData(raceName, Integer.parseInt(raceYear), true);
                 String position = cells.get(1).text();
                 cyclistRaces.put(position, race);
             }
         }
 
         return cyclistRaces;
+    }
+
+    private String sanitizeRaceName(String raceName) {
+        return raceName.replaceAll("\\([^)]*\\)", "").toLowerCase().replace(" ", "-").replaceAll("[^a-z0-9\\-]", "").replaceAll("-+$", "");
     }
 }
