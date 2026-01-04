@@ -6,10 +6,7 @@ import com.github.gblokker.scraper.CyclistScraper;
 
 import java.io.IOException;
 import java.util.Map;
-/**
- * Hello world!
- *
- */
+
 public class App 
 {
     public static void main( String[] args ) {
