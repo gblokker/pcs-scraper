@@ -28,6 +28,13 @@ public class CyclistScraper extends FindElement {
                 .timeout(15000)
                 .get();
 
+        // Check if cyclist exists by looking for error messages or empty table
+        String pageText = cyclistResults.text().toLowerCase();
+        if (pageText.contains("page not found") ||
+            cyclistResults.select("table tbody tr").isEmpty()) {
+            throw new IOException("Cyclist not found: " + cyclistName + " for year " + year);
+        }
+
         // Use ConcurrentHashMap for thread safety
         Map<String, Race> cyclistRaces = new ConcurrentHashMap<>();
         RaceScraper raceScraper = new RaceScraper();
