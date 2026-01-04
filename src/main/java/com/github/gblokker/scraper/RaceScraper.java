@@ -111,13 +111,11 @@ public class RaceScraper extends FindElement {
         Elements rows = resultsTable.select("tbody tr");
         
         for (Element row : rows) {
-            // Get all td cells in the row
             Elements cells = row.select("td");
 
             String rank = cells.get(0).text().trim();
-            
-            // Get rider name from td.ridername cell
             Element nameCell = row.selectFirst("td.ridername a");
+            
             String riderName = "";
 
             if (nameCell != null) {
