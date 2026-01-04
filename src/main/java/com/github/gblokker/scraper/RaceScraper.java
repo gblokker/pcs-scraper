@@ -93,29 +93,49 @@ public class RaceScraper extends FindElement {
                 .get();
 
         Map<String, String> results = new LinkedHashMap<>();
+        // Write HTML to file for debugging
+        try (java.io.FileWriter writer = new java.io.FileWriter("race_results.html")) {
+            writer.write(raceResults.html());
+        } catch (IOException e) {
+            System.err.println("Failed to write HTML to file: " + e.getMessage());
+        }
 
-        // Select table rows
-        Elements rows = raceResults.select("table tbody tr");
+        // Select results table based on whether it's a stage or overall race
+        Element resultsTable;
+        if (!stage.equals("")) {
+            // For stages, select only the general results table from resultsCont
+            resultsTable = raceResults.selectFirst("div#resultsCont div.general table.results");
+        } else {
+            // For overall race results, select the first results table
+            resultsTable = raceResults.selectFirst("table.results");
+        }
+        
+        if (resultsTable == null) {
+            throw new IOException("Results table not found!");
+        }
+        
+        Elements rows = resultsTable.select("tbody tr");
         
         for (Element row : rows) {
+            System.out.println("Processing row: " + row.text());
             // Get all td cells in the row
             Elements cells = row.select("td");
             
-            // Skip rows that do not have enough cells seperate for gc and day races
-            if (stage.equals("") && cells.size() < 6)continue;
-            if (cells.size() < 8)continue;
+            // Debug: print all cells
+            for (int i = 0; i < cells.size(); i++) {
+                System.out.println("Cell " + i + ": " + cells.get(i).text());
+            }
 
             String rank = cells.get(0).text().trim();
             
-            // Get rider name from 6th cell (index 5)
-            Element nameCell = cells.get(5);
-            Element riderLink = nameCell.selectFirst("a");
+            // Get rider name from td.ridername cell
+            Element nameCell = row.selectFirst("td.ridername a");
             String riderName = "";
-            
-            if (riderLink != null) {
-                riderName = riderLink.text().trim();
-            } else {
+
+            if (nameCell != null) {
                 riderName = nameCell.text().trim();
+            } else {
+                continue; // Skip if no name found
             }
             
             if (!rank.isEmpty() && !riderName.isEmpty()) {
