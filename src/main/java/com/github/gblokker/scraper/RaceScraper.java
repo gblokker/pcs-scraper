@@ -117,14 +117,8 @@ public class RaceScraper extends FindElement {
         Elements rows = resultsTable.select("tbody tr");
         
         for (Element row : rows) {
-            System.out.println("Processing row: " + row.text());
             // Get all td cells in the row
             Elements cells = row.select("td");
-            
-            // Debug: print all cells
-            for (int i = 0; i < cells.size(); i++) {
-                System.out.println("Cell " + i + ": " + cells.get(i).text());
-            }
 
             String rank = cells.get(0).text().trim();
             
@@ -156,8 +150,7 @@ public class RaceScraper extends FindElement {
         Element startlist = raceParticipants.selectFirst("ul.startlist_v4");
         
         if (startlist == null) {
-            System.out.println("No startlist found!");
-            return participants;
+            throw new IOException("Startlist not found!");
         }
 
         Elements teamBlocks = startlist.select("> li");
