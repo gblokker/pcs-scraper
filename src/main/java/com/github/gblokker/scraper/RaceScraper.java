@@ -93,12 +93,6 @@ public class RaceScraper extends FindElement {
                 .get();
 
         Map<String, String> results = new LinkedHashMap<>();
-        // Write HTML to file for debugging
-        try (java.io.FileWriter writer = new java.io.FileWriter("race_results.html")) {
-            writer.write(raceResults.html());
-        } catch (IOException e) {
-            System.err.println("Failed to write HTML to file: " + e.getMessage());
-        }
 
         // Select results table based on whether it's a stage or overall race
         Element resultsTable;
