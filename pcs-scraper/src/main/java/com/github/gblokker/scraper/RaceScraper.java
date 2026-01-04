@@ -14,15 +14,19 @@ import java.util.Map;
 
 public class RaceScraper extends FindElement {
 
-    public Race scrapeRaceData(String raceName, int year, boolean includeParticipants) throws IOException {
-        Map<String, String> raceData = parseBaseRaceInfo(raceName, year);
-        Map<String, String> raceProfile = parseStrageProfile(raceName, year);
+    public Race scrapeRaceData(String raceName, int year, boolean includeParticipants, String stage) throws IOException {
+        boolean isGC = isRaceGC(raceName, year);
+        if (!isGC) {
+            stage = "";
+        }
+        Map<String, String> raceData = parseBaseRaceInfo(raceName, year, stage);
+        Map<String, String> raceProfile = parseStageProfile(raceName, year, stage);
 
         Map<String, String> raceResults;
         Map<String, String> raceParticipants;
 
         if (includeParticipants) {
-            raceResults = parseRaceResult(raceName, year);
+            raceResults = parseRaceResult(raceName, year, stage);
             raceParticipants = parseRaceParticipants(raceName, year);
         } else {
             raceResults = new LinkedHashMap<>();
@@ -41,14 +45,28 @@ public class RaceScraper extends FindElement {
             raceParticipants,
             raceProfile.get("Vertical meters"),
             raceProfile.get("ProfileScore"),
-            raceProfile.get("PS final 25k")
+            raceProfile.get("PS final 25k"),
+            stage
         );
 
         return allData;
     }
 
-    private Map<String, String> parseBaseRaceInfo(String raceName, int year) throws IOException {
-        Document race = Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d/", raceName, year))
+    public Boolean isRaceGC(String raceName, int year) {
+        try {
+            Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d/result", raceName, year))
+                .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
+                .timeout(15000)
+                .get();
+            return false;
+        }
+        catch (IOException e) {
+            return true;
+        }
+    }
+
+    private Map<String, String> parseBaseRaceInfo(String raceName, int year, String stage) throws IOException {
+        Document race = Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d/%s", raceName, year, stage))
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
                 .timeout(15000)
                 .get();
@@ -64,8 +82,12 @@ public class RaceScraper extends FindElement {
         return meta;
     }
 
-    private Map<String, String> parseRaceResult(String raceName, int year) throws IOException {
-        Document raceResults = Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d/result", raceName, year))
+    private Map<String, String> parseRaceResult(String raceName, int year, String stage) throws IOException {
+        String url = String.format("https://www.procyclingstats.com/race/%s/%d/%s/result", raceName, year, stage);
+        if (stage.equals("")){
+            url = String.format("https://www.procyclingstats.com/race/%s/%d/result", raceName, year);
+        }
+        Document raceResults = Jsoup.connect(url)
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
                 .timeout(15000)
                 .get();
@@ -79,8 +101,10 @@ public class RaceScraper extends FindElement {
             // Get all td cells in the row
             Elements cells = row.select("td");
             
-            if (cells.size() < 6) continue;
-            
+            // Skip rows that do not have enough cells seperate for gc and day races
+            if (stage.equals("") && cells.size() < 6)continue;
+            if (cells.size() < 8)continue;
+
             String rank = cells.get(0).text().trim();
             
             // Get rider name from 6th cell (index 5)
@@ -141,8 +165,12 @@ public class RaceScraper extends FindElement {
         return participants;
     }
 
-    private Map<String, String> parseStrageProfile(String raceName, int year) throws IOException {
-        Document raceProfile = Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d/route/stage-profiles", raceName, year))
+    private Map<String, String> parseStageProfile(String raceName, int year, String stage) throws IOException {
+        String url = String.format("https://www.procyclingstats.com/race/%s/%d/%s/route/stage-profiles", raceName, year, stage);
+        if (stage.equals("")){
+            url = String.format("https://www.procyclingstats.com/race/%s/%d/route/stage-profiles", raceName, year);
+        }
+        Document raceProfile = Jsoup.connect(url)
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
                 .timeout(15000)
                 .get();

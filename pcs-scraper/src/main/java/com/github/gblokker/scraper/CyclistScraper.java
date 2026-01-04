@@ -35,11 +35,17 @@ public class CyclistScraper extends FindElement {
                 href = link.attr("href");
             }
             if (cells.size() > 6 && href != null) {
-                String raceName = href.split("/")[1];
-                String raceYear = href.split("/")[2];
-                Race race = raceScraper.scrapeRaceData(raceName, Integer.parseInt(raceYear), true);
-                String position = cells.get(1).text();
-                cyclistRaces.put(position, race);
+                String[] parts = href.split("/");
+                String raceName = parts[1];
+                String raceYear = parts[2];
+                String stage = parts[parts.length - 1];
+                if (stage.equals("gc") || (stage.startsWith("stage-") && stage.matches("stage-\\d+")) || stage.equals("result")) {
+                    Race race = raceScraper.scrapeRaceData(raceName, Integer.parseInt(raceYear), true, stage);
+                    String position = cells.get(1).text();
+                    String uniqueKey = position + "/" + raceName + "/" + raceYear + "/" + stage;
+                    System.out.println(uniqueKey);
+                    cyclistRaces.put(uniqueKey, race);
+                }
             }
         }
 

@@ -15,8 +15,9 @@ public class Race {
     public final String verticalMeters;
     public final String profileScore;
     public final String psFinal25k;
+    public final String stageName;
 
-    public Race(String name, int year, String startDate, String endDate, String classification, String category, String totalDistance, Map<String, String> results, Map<String, String> participants, String verticalMeters, String profileScore, String psFinal25k) {
+    public Race(String name, int year, String startDate, String endDate, String classification, String category, String totalDistance, Map<String, String> results, Map<String, String> participants, String verticalMeters, String profileScore, String psFinal25k, String stageName) {
         this.name = name;
         this.year = year;
         this.startDate = startDate;
@@ -29,5 +30,6 @@ public class Race {
         this.verticalMeters = verticalMeters;
         this.profileScore = profileScore;
         this.psFinal25k = psFinal25k;
+        this.stageName = stageName;
     }
 }
