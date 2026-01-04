@@ -9,7 +9,13 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class CyclistScraper extends FindElement {
     public Cyclist scrapeCyclistData(String cyclistName, int year) throws IOException {
@@ -22,8 +28,13 @@ public class CyclistScraper extends FindElement {
                 .timeout(15000)
                 .get();
 
-        Map<String, Race> cyclistRaces = new java.util.HashMap<>();
+        // Use ConcurrentHashMap for thread safety
+        Map<String, Race> cyclistRaces = new ConcurrentHashMap<>();
         RaceScraper raceScraper = new RaceScraper();
+        
+        int threadCount = Runtime.getRuntime().availableProcessors() * 4; // high number of threads since mostly network tasks
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        List<Future<?>> futures = new ArrayList<>();
 
         Elements rows = cyclistResults.select("table tbody tr");
 
@@ -39,15 +50,34 @@ public class CyclistScraper extends FindElement {
                 String raceName = parts[1];
                 String raceYear = parts[2];
                 String stage = parts[parts.length - 1];
+                
                 if (stage.equals("gc") || (stage.startsWith("stage-") && stage.matches("stage-\\d+")) || stage.equals("result")) {
-                    Race race = raceScraper.scrapeRaceData(raceName, Integer.parseInt(raceYear), true, stage);
                     String position = cells.get(1).text();
                     String uniqueKey = position + "/" + raceName + "/" + raceYear + "/" + stage;
-                    System.out.println(uniqueKey);
-                    cyclistRaces.put(uniqueKey, race);
+                    
+                    Future<?> future = executor.submit(() -> {
+                        try {
+                            Race race = raceScraper.scrapeRaceData(raceName, Integer.parseInt(raceYear), true, stage);
+                            cyclistRaces.put(uniqueKey, race);
+                        } catch (IOException e) {
+                            System.err.println("Error scraping " + uniqueKey + ": " + e.getMessage());
+                        }
+                    });
+                    futures.add(future);
                 }
             }
         }
+
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (Exception e) {
+                System.err.println("Thread execution error: " + e.getMessage());
+            }
+        }
+
+        // Shutdown executor
+        executor.shutdown();
 
         return cyclistRaces;
     }
