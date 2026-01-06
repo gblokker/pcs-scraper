@@ -25,7 +25,7 @@ public class CyclistScraper extends FindElement {
     private Map<String, Race> parseCyclistRaces(String cyclistName, int year) throws IOException {
         Document cyclistResults = Jsoup.connect(String.format("https://www.procyclingstats.com/rider/%s/%d", cyclistName, year))
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
-                .timeout(15000)
+                .timeout(30000)
                 .get();
 
         // Check if cyclist exists by looking for error messages or empty table
@@ -39,7 +39,7 @@ public class CyclistScraper extends FindElement {
         Map<String, Race> cyclistRaces = new ConcurrentHashMap<>();
         RaceScraper raceScraper = new RaceScraper();
         
-        int threadCount = Runtime.getRuntime().availableProcessors() * 4; // high number of threads since mostly network tasks
+        int threadCount = Runtime.getRuntime().availableProcessors() * 2; // high number of threads since mostly network tasks
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         List<Future<?>> futures = new ArrayList<>();
 

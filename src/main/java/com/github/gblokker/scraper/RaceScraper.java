@@ -32,7 +32,7 @@ public class RaceScraper extends FindElement {
 
         Document racesPage = Jsoup.connect(String.format("https://www.procyclingstats.com/races.php?year=%d&circuit=%d&class=&filter=Filter", year, circuit))
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
-                .timeout(15000)
+                .timeout(30000)
                 .get();
 
         // Find table with class "basic" (handles leading/trailing spaces)
@@ -51,7 +51,7 @@ public class RaceScraper extends FindElement {
 
         Elements rows = racesTable.select("tbody tr");
 
-        int threadCount = Runtime.getRuntime().availableProcessors() * 4; // high number of threads since mostly network tasks
+        int threadCount = Runtime.getRuntime().availableProcessors() * 2; // high number of threads since mostly network tasks
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         List<Future<?>> futures = new ArrayList<>();
 
@@ -105,7 +105,7 @@ public class RaceScraper extends FindElement {
     private Map<String, String> getAllStages(String raceName, int year) throws IOException {
         Document racePage = Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d", raceName, year))
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
-                .timeout(15000)
+                .timeout(30000)
                 .get();
 
         Map<String, String> stages = new LinkedHashMap<>();
@@ -191,7 +191,7 @@ public class RaceScraper extends FindElement {
         try {
             Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d/result", raceName, year))
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
-                .timeout(15000)
+                .timeout(30000)
                 .get();
             return false;
         }
@@ -203,7 +203,7 @@ public class RaceScraper extends FindElement {
     private Map<String, String> parseBaseRaceInfo(String raceName, int year, String stage) throws IOException {
         Document race = Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d/%s", raceName, year, stage))
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
-                .timeout(15000)
+                .timeout(30000)
                 .get();
 
         Map<String, String> meta = new HashMap<>();
@@ -224,7 +224,7 @@ public class RaceScraper extends FindElement {
         }
         Document raceResults = Jsoup.connect(url)
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
-                .timeout(15000)
+                .timeout(30000)
                 .get();
 
         Map<String, String> results = new LinkedHashMap<>();
@@ -269,7 +269,7 @@ public class RaceScraper extends FindElement {
     private Map<String, String> parseRaceParticipants(String raceName, int year) throws IOException {
         Document raceParticipants = Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d/startlist", raceName, year))
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
-                .timeout(15000)
+                .timeout(30000)
                 .get();
 
         Map<String, String> participants = new LinkedHashMap<>();
@@ -312,7 +312,7 @@ public class RaceScraper extends FindElement {
         }
         Document raceProfile = Jsoup.connect(url)
                 .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
-                .timeout(15000)
+                .timeout(30000)
                 .get();
 
         Map<String, String> raceProfileData = new HashMap<>();
