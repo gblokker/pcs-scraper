@@ -35,6 +35,7 @@ Scrapes detailed race information, including:
 ```java
 RaceScraper raceScraper = new RaceScraper();
 Race tdf = raceScraper.scrapeRaceData("tour-de-france", 2024, true, "gc");
+Map<String, Race> allRaces = raceScraper.getAllRacesPerYear(2024, "worldtour", true);
 ```
 
 ## Important Notes

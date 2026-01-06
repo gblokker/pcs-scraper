@@ -8,11 +8,146 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class RaceScraper extends FindElement {
+
+    public Map<String, Race> getAllRacesPerYear(int year, String type, Boolean includeParticipants) throws IOException {
+        int circuit = 1;
+        if (type.equals("worldtour")) {
+            circuit = 1;
+        } else if (type.equals("proseries")) {
+            circuit = 26;
+        } else {
+            throw new IOException("Invalid race type: " + type + ". Use 'worldtour' or 'proseries'.");
+        }
+
+        Document racesPage = Jsoup.connect(String.format("https://www.procyclingstats.com/races.php?year=%d&circuit=%d&class=&filter=Filter", year, circuit))
+                .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
+                .timeout(15000)
+                .get();
+
+        // Find table with class "basic" (handles leading/trailing spaces)
+        Element racesTable = null;
+        Elements tables = racesPage.select("table");
+        for (Element table : tables) {
+            if (table.hasClass("basic")) {
+                racesTable = table;
+                break;
+            }
+        }
+
+        if (racesTable == null) {
+            throw new IOException("Races table not found!");
+        }
+
+        Elements rows = racesTable.select("tbody tr");
+
+        int threadCount = Runtime.getRuntime().availableProcessors() * 4; // high number of threads since mostly network tasks
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        List<Future<?>> futures = new ArrayList<>();
+
+        Map<String, Race> races = new ConcurrentHashMap<>();
+
+        for (Element row : rows) {
+            Element raceLink = row.selectFirst("td a[href^=race/]");
+
+            if (raceLink != null) {
+                String href = raceLink.attr("href");
+                String raceName = href.split("/")[1];
+                Boolean isGC = isRaceGC(raceName, year);
+                if (isGC) {
+                    Map<String, String> stages = getAllStages(raceName, year);
+                    for (String stage : stages.keySet()) {
+                        Future<?> future = executor.submit(() -> {
+                            try {
+                                races.put(raceName, scrapeRaceData(raceName, year, includeParticipants, stage));
+                            } catch (IOException e) {
+                                System.err.println("Error scraping " + raceName + " " + stage + " " + year + ": " + e.getMessage());
+                            }
+                        });
+                        futures.add(future);
+                    }
+                } else {
+                    Future<?> future = executor.submit(() -> {
+                        try {
+                            races.put(raceName, scrapeRaceData(raceName, year, includeParticipants, ""));
+                        } catch (IOException e) {
+                            System.err.println("Error scraping " + raceName + " " + year + ": " + e.getMessage());
+                        }
+                    });
+                    futures.add(future);
+                }
+            }
+        }
+
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (Exception e) {
+                System.err.println("Thread execution error: " + e.getMessage());
+            }
+        }
+
+        executor.shutdown();
+
+        return races;
+    }
+
+    private Map<String, String> getAllStages(String raceName, int year) throws IOException {
+        Document racePage = Jsoup.connect(String.format("https://www.procyclingstats.com/race/%s/%d", raceName, year))
+                .userAgent("Mozilla/5.0 (compatible; pcs-scraper/1.0)")
+                .timeout(15000)
+                .get();
+
+        Map<String, String> stages = new LinkedHashMap<>();
+
+        Element stagesTable = null;
+        Elements tables = racePage.select("table");
+        for (Element table : tables) {
+            if (table.hasClass("basic")) {
+                // Check if this is the stages table by looking for parent <h4>Stages</h4>
+                Element prev = table.previousElementSibling();
+                while (prev != null && !prev.tagName().equals("h4")) {
+                    prev = prev.previousElementSibling();
+                }
+                if (prev != null && prev.text().contains("Stages")) {
+                    stagesTable = table;
+                    break;
+                }
+            }
+        }
+
+        if (stagesTable != null) {
+            Elements rows = stagesTable.select("tbody tr");
+            for (Element row : rows) {
+                Element stageLink = row.selectFirst("a[href^=race/]");
+                if (stageLink != null) {
+                    String href = stageLink.attr("href");
+                    String[] parts = href.split("/");
+                    if (parts.length > 0) {
+                        String stageId = parts[parts.length - 1];
+                        stages.put(stageId, href);
+                    }
+                }
+            }
+        }
+
+        // Add "gc" as default if not already present
+        if (!stages.containsKey("gc")) {
+            stages.put("gc", String.format("race/%s/%d/gc", raceName, year));
+        }
+
+        return stages;
+    }
 
     public Race scrapeRaceData(String raceName, int year, boolean includeParticipants, String stage) throws IOException {
         boolean isGC = isRaceGC(raceName, year);

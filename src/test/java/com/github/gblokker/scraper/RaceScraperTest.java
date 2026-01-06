@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
+import java.util.Map;
 
 public class RaceScraperTest {
     
@@ -64,5 +65,36 @@ public class RaceScraperTest {
         assertThrows(IOException.class, () -> {
             raceScraper.scrapeRaceData("invalid-race", 2024, false, "result");
         });
+    }
+
+    @Test
+    public void testGetAllRacesPerYear_WorldTour() throws IOException {
+        Map<String, Race> races = raceScraper.getAllRacesPerYear(2024, "worldtour", false);
+        
+        assertNotNull(races, "Races map should not be null");
+        assertFalse(races.isEmpty(), "Races map should not be empty");
+        assertTrue(races.size() > 0, "Should have at least one race");
+        
+        // Check if some known WorldTour races are present
+        assertTrue(races.containsKey("tour-de-france") || 
+                   races.containsKey("giro-d-italia") || 
+                   races.containsKey("milano-sanremo"),
+                   "Should contain at least one major WorldTour race");
+    }
+
+    @Test
+    public void testGetAllRacesPerYear_ProSeries() throws IOException {
+        Map<String, Race> races = raceScraper.getAllRacesPerYear(2024, "proseries", false);
+        
+        assertNotNull(races, "Races map should not be null");
+        assertFalse(races.isEmpty(), "Races map should not be empty");
+        assertTrue(races.size() > 0, "Should have at least one race");
+    }
+
+    @Test
+    public void testGetAllRacesPerYear_InvalidType_ShouldThrowException() {
+        assertThrows(IOException.class, () -> {
+            raceScraper.getAllRacesPerYear(2024, "invalid", false);
+        }, "Should throw IOException for invalid race type");
     }
 }
